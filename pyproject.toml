@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "esm-trust"
+version = "0.1.0"
+description = "Reliability calibration for ESM-C zero-shot variant-effect predictions"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = ["numpy", "scipy"]
+
+[project.optional-dependencies]
+model = ["torch", "esm"]
+
+[tool.setuptools]
+packages = ["esm_trust"]
