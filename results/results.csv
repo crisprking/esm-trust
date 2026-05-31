@@ -1,0 +1,8 @@
+dms_id,label,category,n,rho_300M,rho_600M,cross_size_agree,rho_wt_marginal,rho_masked_marginal
+BLAT_ECOLX_Firnberg_2014,BLAT (Firnberg),OrganismalFitness,4783,0.683,0.717,,,
+PABP_YEAST_Melamed_2013,PABP,Binding,37708,0.691,0.718,,,
+BLAT_ECOLX_Stiffler_2015,BLAT (Stiffler),OrganismalFitness,4996,0.684,0.715,,,
+BLAT_ECOLX_Jacquier_2013,BLAT (Jacquier),OrganismalFitness,989,0.678,0.696,,,
+BLAT_ECOLX_Deng_2012,BLAT (Deng),OrganismalFitness,4996,0.500,0.504,,0.504,0.529
+GFP_AEQVI_Sarkisyan_2016,GFP,Expression,51714,0.236,0.286,,0.286,0.141
+SPG1_STRSG_Wu_2016,GB1 (Wu),OrganismalFitness,149360,0.172,0.116,,,

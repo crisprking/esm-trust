@@ -3,3 +3,7 @@ __pycache__/
 .ipynb_checkpoints/
 *.egg-info/
 .pytest_cache/
+.esm_trust_cache/
+build/
+dist/
+.DS_Store

@@ -1,2 +1,8 @@
-numpy
-scipy
+# Analysis / math / IO layer (what the unit tests and figures need).
+# The model layer (torch, esm) is intentionally NOT pinned here — install it
+# separately on a GPU box:  pip install -e ".[model]"   (or use Kaggle's preinstalled torch).
+numpy==1.26.4
+scipy==1.13.1
+pandas==2.2.2
+scikit-learn==1.5.1
+matplotlib==3.9.2

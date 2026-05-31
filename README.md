@@ -1,61 +1,118 @@
 # esm-trust
 
-**A reliability layer for ESM-C zero-shot variant-effect predictions.** It answers the one question the model itself can't: *should you trust its predictions for your protein?*
+**When can you trust ESM-C's zero-shot variant-effect rankings — and when can't you?**
+A small, reproducible benchmark and a calibration tool for working scientists.
 
-![keystone](figures/fig1_confidence_vs_accuracy.png)
+[![tests](https://github.com/crisprking/esm-trust/actions/workflows/ci.yml/badge.svg)](https://github.com/crisprking/esm-trust/actions/workflows/ci.yml)
+&nbsp;MIT&nbsp;·&nbsp;Python ≥ 3.10
 
-## Why this exists
+---
 
-Protein language models like ESM-C predict which mutations help or harm a protein. They are genuinely strong where the assayed phenotype is shaped by the same evolutionary pressure that shaped the protein, and unreliable where it is not (fluorescence brightness, specific-partner binding, aggregation, rapidly-evolving viral proteins).
+## The finding in one paragraph
 
-The danger is that **this competence boundary is invisible from the inside.** Stress-testing ESM-C on ProteinGym, we found:
+ESM-C ranks the effects of mutations well when a phenotype is coupled to evolutionary
+conservation (β-lactamase resistance, PABP binding: Spearman ≈ 0.72 against experiment) and
+poorly when it is not (GFP brightness ≈ 0.29; GB1 ≈ 0.12). The danger is that **the model's
+internal self-consistency looks the same in both regimes** — a no-data signal like 300M↔600M
+cross-size agreement does not separate the reliable assays from the unreliable ones. So you
+cannot tell, for free, which regime your assay is in. You *can* buy the answer cheaply: about
+**100 measured variants** pin the achievable correlation to roughly ±0.10. This repo is the
+benchmark behind that claim and a small tool that does the calibration bookkeeping.
 
-- It nails conservation-coupled assays (BLAT 0.72, PABP 0.72) and fails others (GFP brightness 0.28, GB1 binding 0.11).
-- **The failures are confident and consistent.** The 300M and 600M models agree just as strongly on the proteins it gets wrong (GFP) as on the ones it gets right (BLAT). Self-consistency does not predict accuracy.
-- No shortcut predicts where it fails: not internal agreement (rho 0.46), not phenotype labels (0.04), not ProteinGym's own selection-type metadata (-0.17).
-- Scaling 300M to 600M barely moves reliability, and is negative on some assays.
+## Provenance — read this first
 
-The only honest way to know if ESM-C works for your assay is to **measure it** against a handful of known variants. About 100 measurements pin reliability to +/-0.10.
+Every number in the figures and the README is computed by the code here and written to
+[`results/results.csv`](results/results.csv). Nothing is hard-coded into the plotting script.
+See [`DATA.md`](DATA.md) for exactly which rows are present, how they were produced, and which
+figures each column drives.
 
-| | |
-|---|---|
-| ![](figures/fig2_selection_type.png) | ![](figures/fig3_calibration_curve.png) |
+The shipped `results.csv` contains a **7-assay panel** that spans phenotype classes (four
+β-lactamase scans, PABP, GFP, GB1) plus a two-assay masked-marginal robustness check. The
+keystone "confidence ≠ accuracy" figure additionally needs the per-assay **cross-size agreement**
+column; run the benchmark once (below) to populate it. The runner regenerates the whole CSV, so
+after one GPU run every figure traces to numbers this code produced — not to anything typed by
+hand.
 
-![scaling](figures/fig4_scaling.png)
-
-## Install
+## Reproduce in ~10 minutes
 
 ```bash
-pip install -e ".[model]"   # the [model] extra adds torch + esm for the real scorer
+git clone https://github.com/crisprking/esm-trust.git
+cd esm-trust
+pip install -e ".[model,figures]"      # math layer + torch/esm + matplotlib
+
+# 1) regenerate the benchmark (downloads the open 300M & 600M ESM-C models; GPU recommended).
+#    No EvolutionaryScale Forge token is needed.
+python -m esm_trust.benchmark                       # -> results/results.csv (incl. cross_size_agree)
+
+# 2) (optional) add the masked-marginal robustness check on two assays
+python -m esm_trust.benchmark \
+    --masked-marginal BLAT_ECOLX_Stiffler_2015 GFP_AEQVI_Sarkisyan_2016
+
+# 3) render every figure from the CSV
+python make_figures.py                              # -> figures/*.png
 ```
 
-## Use
+On Kaggle, set the accelerator to GPU and run the notebook in
+[`notebooks/reproduce.ipynb`](notebooks/reproduce.ipynb); it does the three steps above.
+
+## Use it on your own protein
 
 ```python
 from esm_trust import report
 
-WT = "MKT...your wild-type sequence..."
-variants = ["A12V", "G34S", "L56P:K78E"]        # standard mutation strings
+# no ground truth yet -> you only get the weak guardrail
+report(wt_sequence, variants)
 
-# With a measured calibration set (recommended):
-measured = {"A12V": 1.3, "G34S": -2.1}          # your lab values
-report(WT, variants, measured=measured)
-#  -> bootstrapped reliability (rho_hat +/- 95% CI), a verdict
-#     (RELIABLE / MARGINAL / UNRELIABLE), and how many more variants to measure.
-
-# With no measurements, it gives only a one-sided guardrail and refuses to vouch:
-report(WT, variants)
+# with ~50-100 measured variants -> an honest reliability estimate + verdict
+report(wt_sequence, variants, measured={"M1A": 0.12, "K2R": -0.4, ...})
 ```
 
-`recommend_n(rho_hat, target_se)` returns how many variants to measure for a target precision.
+`report()` returns a Spearman estimate with a bootstrap CI and a plain
+`RELIABLE / MARGINAL / UNRELIABLE` verdict, and tells you how many more variants to measure to
+hit ±0.10. `recommend_n(rho_hat)` answers the budgeting question directly.
 
-## Honest limitations
+## What's here
 
-- Scores are additive across sites, so for libraries with many multi-site variants the ranking partly tracks mutation count, not just per-mutation quality (flagged automatically).
-- Validated on 16-40 ProteinGym assays with the ESM-C family; viral and membrane proteins are underrepresented.
-- Calibration requires labeled variants. That cost is the point, not a bug.
-- Zero-shot only; fine-tuning is out of scope.
+| Path | What it is |
+|---|---|
+| `esm_trust/core.py` | The lightweight user API: `report`, `recommend_n`. |
+| `esm_trust/bench.py` | The audited engine — scoring (WT-marginal, masked-marginal), cross-size agreement, ProteinGym loading, calibration math. The math/IO layer imports with no `torch`/`esm`. |
+| `esm_trust/benchmark.py` | The runner. Produces `results/results.csv`; hard-codes no measurements. |
+| `make_figures.py` | Reads `results.csv`, renders each figure only when its columns exist. |
+| `results/results.csv` | The single source of truth for every reported number. |
+| `tests/` | 16 unit tests for the analysis methods (run on CPU, no model). |
+| `.github/workflows/ci.yml` | Runs the tests on every push (Python 3.10–3.12). |
+| `figures/` | Generated figures. |
 
-## License
+## Key results (all from `results/results.csv`)
 
-MIT.
+![competence boundary](figures/fig1_competence_boundary.png)
+
+- **A sharp competence boundary.** Reliable where conservation-coupled, unreliable where the
+  phenotype is decoupled (engineered or escape-driven). Even *within* β-lactamase, the achievable
+  correlation runs ≈ 0.50–0.72 across four scans of the same protein — the experiment you
+  calibrate against matters as much as the protein.
+- **Confidence ≠ accuracy.** A no-data self-consistency signal (300M↔600M agreement,
+  `ESMScorer.cross_size_agreement`) is a **necessary-not-sufficient** guardrail: low agreement
+  warrants distrust, but high agreement does **not** prove reliability. Measure it for your own
+  assay; never assume it. *(Figure `fig2` renders once you populate `cross_size_agree`.)*
+- **Scaling stays inside the regime.** 300M → 600M buys a few hundredths on the coupled assays,
+  rescues nothing on the decoupled ones, and can regress (GB1). The 6B model — where ESM-C's
+  *structural* scaling law is steepest — needs gated Forge access and is out of scope here.
+- **Calibration.** ~100 measured variants pin the achievable Spearman to about ±0.10
+  (`calibration_se`, `recommend_n`).
+
+## Scope and honesty
+
+This is a stress test of **one component (ESM-C, the language model) on one task (zero-shot
+variant ranking)**. It says nothing about ESMFold2 structure prediction or binder design, which
+are different models doing a different job. Scoring is the wild-type-marginal log-likelihood
+ratio unless a row is explicitly marked masked-marginal; multi-site variants are scored
+additively, which caps performance on combinatorial libraries (this is why GB1/Wu, a four-site
+library, is a *weak* example and the headline contrast leans on BLAT vs GFP). Reframed
+constructively, the result is a **calibration** gap, not a **capability** gap.
+
+## Citation
+
+If this is useful, cite the repository and the underlying ProteinGym benchmark
+(Notin et al., 2023). Full references are in the companion write-up.

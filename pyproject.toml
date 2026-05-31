@@ -4,14 +4,20 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "esm-trust"
-version = "0.1.0"
+version = "0.2.0"
 description = "Reliability calibration for ESM-C zero-shot variant-effect predictions"
 readme = "README.md"
-requires-python = ">=3.9"
-dependencies = ["numpy", "scipy"]
+requires-python = ">=3.10"
+license = { text = "MIT" }
+dependencies = ["numpy", "scipy", "pandas", "scikit-learn"]
 
 [project.optional-dependencies]
-model = ["torch", "esm"]
+model = ["torch", "esm"]            # the GPU scoring layer (ESMScorer, the benchmark runner)
+figures = ["matplotlib"]            # make_figures.py
+dev = ["pytest"]
+
+[project.scripts]
+esm-trust-benchmark = "esm_trust.benchmark:_cli"
 
 [tool.setuptools]
 packages = ["esm_trust"]

@@ -1,0 +1,36 @@
+name: tests
+
+# Runs the unit tests for the pure-math / I/O-free layer of esm_trust_bench.
+# These are CPU-only and import with just numpy/scipy/pandas/scikit-learn — no
+# torch, no esm, no GPU, no network — so CI stays fast and green. The model layer
+# (ESMScorer) lazy-imports torch/esm and is exercised in the notebook, not in CI.
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: [ "3.10", "3.11", "3.12" ]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install test dependencies (math layer only)
+        run: |
+          python -m pip install --upgrade pip
+          pip install "numpy==1.26.4" "scipy==1.13.1" "pandas==2.2.2" "scikit-learn==1.5.1" pytest
+
+      - name: Run unit tests
+        run: pytest tests/ -q
