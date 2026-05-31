@@ -49,8 +49,8 @@ produced. Which is exactly why the results split the way they do.
 ## A sharp competence boundary
 
 The per-assay correlations split cleanly into a high-reliability group and a low-reliability
-one. β-lactamase resistance (BLAT, Stiffler 2015) lands at a Spearman of **0.72**; PABP binding
-(Melamed 2013), **0.72** as well. Then GFP brightness (Sarkisyan 2016) collapses to **0.29**,
+one. β-lactamase resistance (BLAT, Stiffler 2015) lands at a Spearman of **0.71**; PABP binding
+(Melamed 2013), **0.72**. Then GFP brightness (Sarkisyan 2016) collapses to **0.29**,
 and GB1 stability (Wu 2016) to **0.12**. (One detail worth noticing, and a preview of the
 remedy: even *within* β-lactamase, the achievable correlation runs from about 0.50 to 0.72
 across four different deep-mutational scans of the same protein — the experiment you calibrate
@@ -99,7 +99,7 @@ GFP variants as stably as it ranks β-lactamase variants while being reliable ab
 useless about the other. It does exactly that: across this panel, cross-size agreement stays
 between 0.89 and 0.93 regardless of accuracy — GFP, which the model ranks at only ρ ≈ 0.29, posts
 0.92 agreement, indistinguishable from the 0.93 it posts on the β-lactamase scans it ranks at
-ρ ≈ 0.72. Nothing in the agreement number tells the two regimes apart. The
+ρ ≈ 0.71. Nothing in the agreement number tells the two regimes apart. The
 `esm-trust` tool computes this agreement so you can check it for your own assay — but treat *low*
 agreement as a red flag and never read *high* agreement as a green light.[^mm]
 
@@ -108,7 +108,7 @@ self-consistency, agreement across model sizes — fires just as strongly in the
 as in the success regime. The model is most wrong precisely where it looks most self-consistent.
 You cannot catch the bluff by listening more closely.
 
-![Confidence ≠ accuracy. Each dot is one assay: the horizontal axis is the model's self-consistency — how closely the 300M and 600M models agree on the variant ordering, computable with no experimental data — and the vertical axis is true reliability (Spearman vs. experiment). If self-consistency tracked reliability, the dots would climb a diagonal. Instead they stay pinned to the right, between 0.89 and 0.93, while spreading across the entire vertical range: the model is as self-consistent on GFP (0.92 agreement, 0.29 reliability) as on the β-lactamase scans (0.93 agreement, ~0.72 reliability).](figures/fig2_confidence_vs_accuracy.png)
+![Confidence ≠ accuracy. Each dot is one assay: the horizontal axis is the model's self-consistency — how closely the 300M and 600M models agree on the variant ordering, computable with no experimental data — and the vertical axis is true reliability (Spearman vs. experiment). If self-consistency tracked reliability, the dots would climb a diagonal. Instead they stay pinned to the right, between 0.89 and 0.93, while spreading across the entire vertical range: the model is as self-consistent on GFP (0.92 agreement, 0.29 reliability) as on the β-lactamase scans (0.93 agreement, ~0.71 reliability).](figures/fig2_confidence_vs_accuracy.png)
 
 ## The natural hope is that a bigger model fixes this
 
@@ -123,7 +123,7 @@ run: scale buys quality *inside* a regime, not escape *from* one.
 
 | Assay | ESM-C 300M | ESM-C 600M |
 |---|---|---|
-| β-lactamase / BLAT (Stiffler 2015) | 0.68 | **0.72** |
+| β-lactamase / BLAT (Stiffler 2015) | 0.68 | **0.71** |
 | PABP binding (Melamed 2013) | 0.69 | **0.72** |
 | GFP brightness (Sarkisyan 2016) | 0.24 | **0.29** |
 | GB1 stability (Wu 2016) | 0.17 | **0.12** |
