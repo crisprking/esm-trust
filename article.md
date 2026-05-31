@@ -13,8 +13,9 @@ the lab that built it, the previous November. The release bundles three things: 
 language model that represents proteins; **ESMFold2**, a structure-prediction and design
 engine built on the 6-billion-parameter ESM-C; and **ESM Atlas**, a map of billions of
 sequences. The headlines belong to ESMFold2: Biohub's preprint — not yet peer-reviewed —
-reports that it predicts structures and biomolecular complexes at accuracy rivaling AlphaFold3
-on the FoldBench protein–protein and antibody–antigen benchmarks, and that it was used to design
+reports that — from sequence alone — it predicts antibody–antigen complexes more accurately than
+AlphaFold3, and that given the same evolutionary inputs (MSAs) it is the strongest predictor on
+FoldBench's protein–protein and antibody–antigen benchmarks, and that it was used to design
 lab-validated miniproteins and single-chain antibodies against five targets central to cancer
 and immunology, with nanomolar binding affinities and high experimental success rates.
 
@@ -74,12 +75,9 @@ of it.
 
 It would be comforting if the failures were just incompetence — a weak model fumbling hard
 proteins. They aren't. ESM-C's internal representation of protein space is genuinely
-structured. On a small panel of ten well-characterized proteins from four families, once you
-correct for a geometric quirk that makes every embedding look artificially similar (the
-cosine-similarity concentration effect — I center the embeddings before measuring), the
-representation cleanly separates the families: a silhouette score around **0.64**, against
-roughly **0.07** for the raw, uncorrected vectors. That's an illustration on a curated panel,
-not a population statistic — but it makes the point. The model knows a great deal about
+structured. Biohub's own results show its embeddings organize proteins by fold and family, and ESMFold2 —
+the state-of-the-art structure engine in the very same release — is built directly on those
+representations. The model knows a great deal about
 proteins. Its variant-ranking failures are not ignorance; they are a *task mismatch* between
 what it learned (evolutionary statistics) and what some assays measure (engineered or
 escape-driven phenotypes).
@@ -98,7 +96,10 @@ is at least stable.
 The trouble is that self-consistency measures whether the model agrees with *itself*, not whether
 it agrees with *reality* — so it can run high precisely where accuracy is low. A model can rank
 GFP variants as stably as it ranks β-lactamase variants while being reliable about the one and
-useless about the other; nothing in the agreement number tells the two regimes apart. The
+useless about the other. It does exactly that: across this panel, cross-size agreement stays
+between 0.89 and 0.93 regardless of accuracy — GFP, which the model ranks at only ρ ≈ 0.29, posts
+0.92 agreement, indistinguishable from the 0.93 it posts on the β-lactamase scans it ranks at
+ρ ≈ 0.72. Nothing in the agreement number tells the two regimes apart. The
 `esm-trust` tool computes this agreement so you can check it for your own assay — but treat *low*
 agreement as a red flag and never read *high* agreement as a green light.[^mm]
 
@@ -107,9 +108,7 @@ self-consistency, agreement across model sizes — fires just as strongly in the
 as in the success regime. The model is most wrong precisely where it looks most self-consistent.
 You cannot catch the bluff by listening more closely.
 
-<!-- FIGURE: figures/fig2_confidence_vs_accuracy.png — the keystone scatter (self-consistency on
-the x-axis, true reliability on the y-axis). It renders once you run `python -m esm_trust.benchmark`,
-which measures per-assay cross-size agreement. Drop it in here once generated. -->
+![Confidence ≠ accuracy. Each dot is one assay: the horizontal axis is the model's self-consistency — how closely the 300M and 600M models agree on the variant ordering, computable with no experimental data — and the vertical axis is true reliability (Spearman vs. experiment). If self-consistency tracked reliability, the dots would climb a diagonal. Instead they stay pinned to the right, between 0.89 and 0.93, while spreading across the entire vertical range: the model is as self-consistent on GFP (0.92 agreement, 0.29 reliability) as on the β-lactamase scans (0.93 agreement, ~0.72 reliability).](figures/fig2_confidence_vs_accuracy.png)
 
 ## The natural hope is that a bigger model fixes this
 
@@ -213,9 +212,9 @@ A few caveats that constrain the claims above, in roughly descending importance:
 - **One component, one task.** This benchmarks ESM-C (the language model) on zero-shot variant
   ranking. It says nothing about ESMFold2's structure prediction or binder design, which are
   different models doing a different job.
-- **Panel sizes.** The family-separation figure is an illustration on ten proteins; the scaling
-  comparison spans two model sizes. Both are suggestive at the scale a single person can run, not
-  exhaustive.
+- **Panel size.** The benchmark spans seven assays across several phenotype classes at two model
+  sizes (300M and 600M). That is enough to establish the regime split cleanly, but it is a focused
+  panel at the scale a single person can run, not an exhaustive sweep of ProteinGym.
 
 ## Before your next screen
 
@@ -226,13 +225,13 @@ point.
 
 ---
 
-![The "better" scoring method widens the gap: under field-standard masked-marginal scoring, GFP drops from 0.29 to 0.14 while the β-lactamase scan barely moves.](figures/fig5_masked_marginal.png)
+![The "better" scoring method widens the gap: under field-standard masked-marginal scoring, GFP drops from 0.29 to 0.14 while the β-lactamase scan (Stiffler 2015) edges up from 0.71 to 0.74 — the reliable case is untouched, the decoupled case gets worse.](figures/fig5_masked_marginal.png)
 
 [^mm]: I rescored under both wild-type-marginal and field-standard masked-marginal scoring. The
 reliable/unreliable ordering persists, and on the decoupled phenotype the "better" method is
 actively *worse*: GFP (Sarkisyan 2016) drops from a wild-type-marginal ρ of 0.29 to a
-masked-marginal ρ of **0.14**. The reliable case is unmoved by the switch — on a β-lactamase
-scan the score shifts by a few hundredths, not into another regime. Masked-marginal is a purer
+masked-marginal ρ of **0.14**. The reliable case is untouched by the switch — on the same β-lactamase
+scan (Stiffler 2015) the score edges from 0.71 to 0.74, a few hundredths, not a change of regime. Masked-marginal is a purer
 measure of evolutionary preference: it sharpens the signal where conservation predicts function
 and sharpens the noise where it doesn't. The gap is not an artifact of the cheaper scoring; if
 anything, the field-standard method widens it.
@@ -279,14 +278,3 @@ The works this piece draws on, grouped by role.
 10. Stiffler, M. A., Hekstra, D. R., & Ranganathan, R. (2015). *Evolvability as a function of purifying selection in TEM-1 β-lactamase.* Cell 160, 882–892 (BLAT).
 11. Firnberg, E., Labonte, J. W., Gray, J. J., & Ostermeier, M. (2014). *A comprehensive, high-resolution map of a gene's fitness landscape.* Mol. Biol. Evol. 31, 1581–1592 (BLAT).
 12. Melamed, D., Young, D. L., Gamble, C. E., et al. (2013). *Deep mutational scanning of an RRM domain of the S. cerevisiae poly(A)-binding protein.* RNA 19, 1537–1551 (PABP).
-
-## References
-
-1. Candido, Hayes, Derry, Rao, Lin, Verkuil, … Rives. *Language Modeling Materializes a World Model of Protein Biology.* Biohub, 2026. https://biohub.ai/papers/esm_protein.pdf — ESM-C, ESMFold2, the AlphaFold3 comparison, and the five-target binder results.
-2. Lin et al. *Evolutionary-scale prediction of atomic-level protein structure with a language model.* Science 379 (2023). doi:10.1126/science.ade2574 (bioRxiv 2022.07.20.500902) — ESM-2 / ESMFold; structure-prediction accuracy depends on evolutionary depth.
-3. Rives et al. *Biological structure and function emerge from scaling unsupervised learning to 250 million protein sequences.* PNAS 118(15) (2021). doi:10.1073/pnas.2016239118 — ESM1; biology emerges from sequence statistics.
-4. Meier et al. *Language models enable zero-shot prediction of the effects of mutations on protein function.* NeurIPS 2021. bioRxiv 2021.07.09.450648 — wild-type-marginal vs masked-marginal scoring.
-5. Notin et al. *ProteinGym: large-scale benchmarks for protein fitness prediction and design.* NeurIPS 2023 (Datasets & Benchmarks). https://proteingym.org — the benchmark and per-assay references.
-6. Vieira et al. *Medium-sized protein language models perform well at transfer learning.* Scientific Reports (2025). https://pmc.ncbi.nlm.nih.gov/articles/PMC11601519/ — scaling ESM-C 600M→6B gives only a minor advantage (transfer-learning setting).
-7. Guo et al. *On Calibration of Modern Neural Networks.* ICML 2017. arXiv:1706.04599 — neural-network confidence is frequently miscalibrated.
-8. Deep-mutational-scanning sources for the assays benchmarked here: Stiffler et al. 2015 (β-lactamase, *Cell*); Firnberg et al. 2014 (β-lactamase, *Mol. Biol. Evol.*); Melamed et al. 2013 (PABP, *RNA*); Sarkisyan et al. 2016 (GFP, *Nature*, doi:10.1038/nature17995); Wu et al. 2016 (GB1, *eLife*, doi:10.7554/eLife.16965). Canonical DOIs for every assay are in ProteinGym's reference metadata.
