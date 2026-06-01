@@ -11,7 +11,7 @@ A small, reproducible benchmark and a calibration tool for working scientists.
 ## The finding in one paragraph
 
 ESM-C ranks the effects of mutations well when a phenotype is coupled to evolutionary
-conservation (β-lactamase resistance, PABP binding: Spearman ≈ 0.72 against experiment) and
+conservation (β-lactamase resistance, PABP binding: Spearman ≈ 0.71–0.72 against experiment) and
 poorly when it is not (GFP brightness ≈ 0.29; GB1 ≈ 0.12). The danger is that **the model's
 internal self-consistency looks the same in both regimes** — a no-data signal like 300M↔600M
 cross-size agreement does not separate the reliable assays from the unreliable ones. So you
