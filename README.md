@@ -27,11 +27,11 @@ See [`DATA.md`](DATA.md) for exactly which rows are present, how they were produ
 figures each column drives.
 
 The shipped `results.csv` contains a **7-assay panel** that spans phenotype classes (four
-β-lactamase scans, PABP, GFP, GB1) plus a two-assay masked-marginal robustness check. The
-keystone "confidence ≠ accuracy" figure additionally needs the per-assay **cross-size agreement**
-column; run the benchmark once (below) to populate it. The runner regenerates the whole CSV, so
-after one GPU run every figure traces to numbers this code produced — not to anything typed by
-hand.
+β-lactamase scans, PABP, GFP, GB1) plus a two-assay masked-marginal robustness check, with the
+per-assay **cross-size agreement** column already populated for every assay — so the keystone
+"confidence ≠ accuracy" figure renders straight from the shipped file. Re-running the benchmark
+regenerates the whole CSV, so every figure traces to numbers this code produced — not to anything
+typed by hand.
 
 ## Reproduce in ~10 minutes
 
@@ -95,7 +95,7 @@ hit ±0.10. `recommend_n(rho_hat)` answers the budgeting question directly.
 - **Confidence ≠ accuracy.** A no-data self-consistency signal (300M↔600M agreement,
   `ESMScorer.cross_size_agreement`) is a **necessary-not-sufficient** guardrail: low agreement
   warrants distrust, but high agreement does **not** prove reliability. Measure it for your own
-  assay; never assume it. *(Figure `fig2` renders once you populate `cross_size_agree`.)*
+  assay; never assume it. *(Figure `fig2` renders directly from the shipped CSV — `cross_size_agree` is already present.)*
 - **Scaling stays inside the regime.** 300M → 600M buys a few hundredths on the coupled assays,
   rescues nothing on the decoupled ones, and can regress (GB1). The 6B model — where ESM-C's
   *structural* scaling law is steepest — needs gated Forge access and is out of scope here.

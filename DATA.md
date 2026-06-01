@@ -37,16 +37,17 @@ hand-entered measurements anywhere in the figure pipeline.
 ## State of the shipped CSV
 
 The committed `results.csv` contains a **7-assay panel** with verified `rho_300M` / `rho_600M`,
-and a two-assay **masked-marginal** robustness check (BLAT/Deng and GFP). The
-`cross_size_agree` column is intentionally empty in the shipped file: it was not part of the
-saved runs and must be regenerated. Running
+a populated `cross_size_agree` column for **every** assay, and a two-assay **masked-marginal**
+robustness check (BLAT/Stiffler and GFP). Every figure — including the keystone "confidence ≠
+accuracy" plot — renders directly from this shipped CSV; no extra run is needed to reproduce them.
+Re-running
 
 ```bash
 python -m esm_trust.benchmark
 ```
 
-recomputes the entire CSV — including `cross_size_agree` for every assay — so after one GPU run
-the keystone figure renders from measured numbers and the whole table is reproducible end to end.
+recomputes the entire CSV — including `cross_size_agree` for every assay — so the whole table is
+reproducible end to end from measured numbers.
 
 To extend the panel (e.g. to the broader ProteinGym selection-type cohort), add assay tokens to
 `DEFAULT_PANEL` in `esm_trust/benchmark.py` and re-run; the runner resolves each token against
@@ -54,13 +55,13 @@ ProteinGym and records the resolved `dms_id`.
 
 ## A note on the masked-marginal rows
 
-The shipped masked-marginal check ran on **BLAT/Deng** (the low β-lactamase scan, ρ ≈ 0.50), not
-on BLAT/Stiffler (the headline ρ ≈ 0.72). The conclusion — the field-standard scoring widens the
-gap (GFP drops 0.29 → 0.14) — does not depend on which BLAT scan is used, but if you want the
-robustness check to name the *same* assay as the headline, run:
+The shipped masked-marginal check ran on **BLAT/Stiffler** (the headline β-lactamase scan,
+ρ ≈ 0.71) and GFP — the same β-lactamase assay named in the headline. The conclusion — the
+field-standard scoring widens the gap (GFP drops 0.29 → 0.14 while BLAT/Stiffler edges up
+0.71 → 0.74) — does not depend on which BLAT scan is used. To re-run the same pair:
 
 ```bash
 python -m esm_trust.benchmark --masked-marginal BLAT_ECOLX_Stiffler_2015 GFP_AEQVI_Sarkisyan_2016
 ```
 
-and `fig5` will redraw with BLAT/Stiffler.
+and `fig5` will redraw from the same pair.
